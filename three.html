@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Title</title>
+</head>
+<body>
+    <script src="three.js"></script>
+    <script src="GLTFLoader.js"></script>
+    <script src="OrbitControls.js"></script>
+    <script src="XRControllerModelFactory.js"></script>
+    <script src="VRButton.js"></script>
+    <script>
+
+
+
+        let scene, camera, renderer;
+        function init() {
+          scene = new THREE.Scene();
+            scene.background = new THREE.CubeTextureLoader()
+                .setPath( 'textures/cubeMaps/' )
+                .load( [
+                    'px.png',
+                    'nx.png',
+                    'py.png',
+                    'ny.png',
+                    'pz.png',
+                    'nz.png'
+                ] );
+
+          camera = new THREE.PerspectiveCamera(40,window.innerWidth/window.innerHeight,1,5000);
+          camera.rotation.y = 45/180*Math.PI;
+          camera.position.x = 1100;
+          camera.position.y = 100;
+          camera.position.z = 1000;
+
+
+
+          hlight = new THREE.HemisphereLight( 0xffffbb, 0x080820, 1 );
+          scene.add(hlight);
+
+          renderer = new THREE.WebGLRenderer({antialias:true});
+          renderer.setSize(window.innerWidth,window.innerHeight);
+          document.body.appendChild(renderer.domElement);
+          renderer.vr.enabled = true;
+
+          const map = new THREE.TextureLoader().load('textures/2_no_clouds_4k.jpg');
+          const bumpMap = new THREE.TextureLoader().load('textures/elev_bump_4k.jpg');
+           const specularMap = new THREE.TextureLoader().load('textures/water_4k.png');
+
+           earth = new THREE.Mesh(
+                new THREE.SphereGeometry(0.5, 32, 32),
+                new THREE.MeshPhongMaterial({
+                    map: map,
+                    bumpMap: bumpMap,
+                    bumpScale: 0.005,
+                    specularMap: specularMap,
+                    specular: new THREE.Color('grey')      })
+            );
+
+            earth.translateZ ( -500 );
+            earth.scale.set(300,300,300);
+            scene.add(earth);
+
+            let controls = new THREE.OrbitControls(camera, renderer.domElement);
+            controls.addEventListener('change', renderer);
+
+          let loader = new THREE.GLTFLoader();
+
+          loader.load('shoe.gltf', function(gltf) {
+            shoe = gltf.scene.children[0];
+            shoe.translateZ( 500 );
+            shoe.scale.set(0.5,0.5,0.5);
+            scene.add(gltf.scene);
+            animate();
+          });
+            //const texture = new THREE.TextureLoader().load( 'textures/land_ocean_ice_cloud_2048.jpg' );
+
+            document.body.appendChild( VRButton.createButton( renderer ) );
+            renderer.xr.enabled = true;
+
+          const controllerModelFactory = new XRControllerModelFactory();
+
+          const controllerGrip1 = renderer.xr.getControllerGrip( 0 );
+          controllerGrip1.add( controllerModelFactory.createControllerModel( controllerGrip1 ) );
+          scene.add( controllerGrip1 );
+
+          const controllerGrip2 = renderer.xr.getControllerGrip( 1 );
+          controllerGrip2.add( controllerModelFactory.createControllerModel( controllerGrip2 ) );
+          scene.add( controllerGrip2 );
+
+        }
+        function animate() {
+          renderer.setAnimationLoop( function () {
+            shoe.rotation.x += 0.01;
+            shoe.rotation.y += 0.01;
+            earth.rotation.x += 0.001;
+            earth.rotation.y += 0.001;
+            renderer.render(scene,camera);
+            requestAnimationFrame(animate);
+          })
+
+        }
+        init();
+    </script>
+</body>
+</html>
